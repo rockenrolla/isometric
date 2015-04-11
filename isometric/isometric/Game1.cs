@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -12,10 +14,23 @@ namespace isometric
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
+        Dictionary<string, Texture2D> spriteSheet = new Dictionary<string, Texture2D>();
+        Map map;
+        Camera camera;
+
+        const int WINDOW_WIDTH = 1024;
+        const int WINDOW_HEIGHT = 768;
+
+        int prevScroll = 0;
+
         public Game1()
             : base()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferWidth = WINDOW_WIDTH;
+            graphics.PreferredBackBufferHeight = WINDOW_HEIGHT;
+            graphics.IsFullScreen = false;
+            IsMouseVisible = true;
             Content.RootDirectory = "Content";
         }
 
@@ -27,7 +42,9 @@ namespace isometric
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            map = new Map(new Vector2(50, 50), spriteSheet, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+            camera = new Camera();
 
             base.Initialize();
         }
@@ -41,7 +58,13 @@ namespace isometric
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            // adding sprites to sprite sheet
+            spriteSheet.Add("grass", Content.Load<Texture2D>("grass2"));
+            spriteSheet.Add("sand", Content.Load<Texture2D>("sand"));
+            spriteSheet.Add("water", Content.Load<Texture2D>("water"));
+            spriteSheet.Add("empty", Content.Load<Texture2D>("empty"));
+            map.Generate("grass");
+
         }
 
         /// <summary>
@@ -63,9 +86,23 @@ namespace isometric
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            updateCamera();
 
             base.Update(gameTime);
+        }
+
+        public void updateCamera()
+        {
+            int scroll = Mouse.GetState().ScrollWheelValue;
+            if (scroll-prevScroll > 0)
+            {
+                camera.zoom *= 1.1;
+            }
+            else if (scroll - prevScroll < 0)
+            {
+                camera.zoom = camera.zoom <= 1 ? 1 : camera.zoom * 0.9;
+            }
+            prevScroll = scroll;
         }
 
         /// <summary>
@@ -74,9 +111,13 @@ namespace isometric
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+
+            map.Draw(spriteBatch, camera);
+
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
